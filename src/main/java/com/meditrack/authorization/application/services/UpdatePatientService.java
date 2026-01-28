@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
+import com.meditrack.authorization.domain.exceptions.UnauthorizedAccessException;
 import com.meditrack.authorization.domain.models.Patient;
 import com.meditrack.authorization.domain.ports.in.command.UpdatePatientCommand;
 import com.meditrack.authorization.domain.ports.in.useCase.UpdatePatientUseCase;
@@ -40,14 +42,14 @@ public class UpdatePatientService implements UpdatePatientUseCase {
 
         // 2. Buscar el paciente
         Patient patient = patientRepository.findByIdAndNotDeleted(command.getPatientId())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Paciente no encontrado: " + command.getPatientId()
                 ));
 
         // 3. Verificar permisos (paciente solo puede actualizar su propia info)
         userRepository.findById(currentUserId).ifPresent(user -> {
             if (!user.canAccessPatient(patient.getId())) {
-                throw new IllegalStateException(
+                throw new UnauthorizedAccessException(
                         "No tienes permiso para actualizar este paciente"
                 );
             }

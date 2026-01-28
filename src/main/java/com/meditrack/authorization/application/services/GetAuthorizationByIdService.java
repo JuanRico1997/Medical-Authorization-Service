@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
+import com.meditrack.authorization.domain.exceptions.UnauthorizedAccessException;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
 import com.meditrack.authorization.domain.ports.in.query.GetAuthorizationByIdQuery;
 import com.meditrack.authorization.domain.ports.in.useCase.GetAuthorizationByIdUseCase;
@@ -38,8 +40,8 @@ public class GetAuthorizationByIdService implements GetAuthorizationByIdUseCase 
         // 2. Buscar la autorización
         MedicalAuthorization authorization = authorizationRepository.findByIdAndNotDeleted(
                 query.getAuthorizationId()
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "Autorización no encontrada: " + query.getAuthorizationId()
+        ).orElseThrow(() -> new ResourceNotFoundException(
+                "Autorización", query.getAuthorizationId()
         ));
 
         // 3. Verificar permisos
@@ -47,7 +49,7 @@ public class GetAuthorizationByIdService implements GetAuthorizationByIdUseCase 
             // Paciente solo puede ver sus propias autorizaciones
             if (user.isPatient() && user.hasPatient()) {
                 if (!authorization.getPatientId().equals(user.getPatientId())) {
-                    throw new IllegalStateException(
+                    throw new UnauthorizedAccessException(
                             "No tienes permiso para ver esta autorización"
                     );
                 }

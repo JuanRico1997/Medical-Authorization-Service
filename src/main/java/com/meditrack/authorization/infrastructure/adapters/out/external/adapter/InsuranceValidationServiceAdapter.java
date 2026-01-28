@@ -2,6 +2,7 @@ package com.meditrack.authorization.infrastructure.adapters.out.external.adapter
 
 import com.meditrack.authorization.domain.enums.AffiliationType;
 import com.meditrack.authorization.domain.enums.ServiceType;
+import com.meditrack.authorization.domain.exceptions.ExternalServiceException;
 import com.meditrack.authorization.domain.ports.out.InsuranceValidationServicePort;
 import com.meditrack.authorization.infrastructure.adapters.out.external.dto.InsuranceValidationRequest;
 import com.meditrack.authorization.infrastructure.adapters.out.external.dto.InsuranceValidationResponse;
@@ -75,7 +76,7 @@ public class InsuranceValidationServiceAdapter implements InsuranceValidationSer
 
         } catch (Exception e) {
             System.err.println("Error al llamar al servicio de seguros: " + e.getMessage());
-            throw new RuntimeException("Error al validar la cobertura con la aseguradora: " + e.getMessage(), e);
+            throw new ExternalServiceException("Insurance Validation Service", e);
         }
     }
 }

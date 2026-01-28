@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.BusinessRuleException;
+import com.meditrack.authorization.domain.exceptions.UnauthorizedAccessException;
 import com.meditrack.authorization.domain.models.User;
 import com.meditrack.authorization.domain.ports.in.command.LoginUserCommand;
 import com.meditrack.authorization.domain.ports.in.useCase.LoginUserUseCase;
@@ -33,15 +35,13 @@ public class LoginUserService implements LoginUserUseCase {
 
         // 1. Buscar el usuario por username
         User user = userRepository.findByUsername(command.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new UnauthorizedAccessException(
                         "Credenciales inválidas"
                 ));
 
         // 2. Verificar que el usuario esté activo
         if (!user.isActive()) {
-            throw new IllegalArgumentException(
-                    "El usuario está desactivado"
-            );
+            throw new BusinessRuleException("El usuario no está activo");
         }
 
         // 3. Verificar la contraseña

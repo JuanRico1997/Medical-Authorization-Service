@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.BusinessRuleException;
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
 import com.meditrack.authorization.domain.models.Patient;
 import com.meditrack.authorization.domain.ports.in.command.CreateMedicalAuthorizationCommand;
@@ -35,19 +37,19 @@ public class CreateMedicalAuthorizationService implements CreateMedicalAuthoriza
 
         // 1. Verificar que el paciente existe
         Patient patient = patientRepository.findByIdAndNotDeleted(command.getPatientId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Paciente no encontrado: " + command.getPatientId()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Paciente", command.getPatientId()
                 ));
 
         // 2. Verificar que el usuario solicitante existe
         userRepository.findById(command.getRequestedBy())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Usuario solicitante no encontrado: " + command.getRequestedBy()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Usuario", command.getRequestedBy()
                 ));
 
         // 3. Verificar que el paciente está activo
         if (!patient.isActive()) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "El paciente no está activo y no puede solicitar autorizaciones"
             );
         }

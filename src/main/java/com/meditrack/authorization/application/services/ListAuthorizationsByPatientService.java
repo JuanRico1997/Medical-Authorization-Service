@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
+import com.meditrack.authorization.domain.exceptions.UnauthorizedAccessException;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
 import com.meditrack.authorization.domain.ports.in.query.ListAuthorizationsByPatientQuery;
 import com.meditrack.authorization.domain.ports.in.useCase.ListAuthorizationsByPatientUseCase;
@@ -39,8 +41,8 @@ public class ListAuthorizationsByPatientService implements ListAuthorizationsByP
 
         // 1. Verificar que el paciente existe
         patientRepository.findByIdAndNotDeleted(query.getPatientId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Paciente no encontrado: " + query.getPatientId()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Paciente", query.getPatientId()
                 ));
 
         // 2. Obtener el usuario actual
@@ -51,7 +53,7 @@ public class ListAuthorizationsByPatientService implements ListAuthorizationsByP
             // Paciente solo puede ver sus propias autorizaciones
             if (user.isPatient() && user.hasPatient()) {
                 if (!query.getPatientId().equals(user.getPatientId())) {
-                    throw new IllegalStateException(
+                    throw new UnauthorizedAccessException(
                             "No tienes permiso para ver las autorizaciones de este paciente"
                     );
                 }

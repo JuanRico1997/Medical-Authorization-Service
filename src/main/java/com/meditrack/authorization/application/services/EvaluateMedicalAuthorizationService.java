@@ -1,5 +1,7 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.BusinessRuleException;
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
 import com.meditrack.authorization.domain.models.CoverageEvaluation;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
 import com.meditrack.authorization.domain.models.Patient;
@@ -42,21 +44,21 @@ public class EvaluateMedicalAuthorizationService implements EvaluateMedicalAutho
         // 1. Buscar la autorización
         MedicalAuthorization authorization = authorizationRepository.findByIdAndNotDeleted(
                 command.getAuthorizationId()
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "Autorización no encontrada: " + command.getAuthorizationId()
+        ).orElseThrow(() -> new ResourceNotFoundException(
+                "Autorización", command.getAuthorizationId()
         ));
 
         // 2. Verificar que no haya sido evaluada
         if (evaluationRepository.existsByAuthorizationId(authorization.getId())) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "Esta autorización ya ha sido evaluada"
             );
         }
 
         // 3. Obtener el paciente
         Patient patient = patientRepository.findByIdAndNotDeleted(authorization.getPatientId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Paciente no encontrado: " + authorization.getPatientId()
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Paciente", authorization.getPatientId()
                 ));
 
         // 4. Llamar al servicio externo de seguros

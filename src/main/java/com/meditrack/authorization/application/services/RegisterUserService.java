@@ -1,5 +1,6 @@
 package com.meditrack.authorization.application.services;
 
+import com.meditrack.authorization.domain.exceptions.DuplicateResourceException;
 import com.meditrack.authorization.domain.models.User;
 import com.meditrack.authorization.domain.ports.in.command.RegisterUserCommand;
 import com.meditrack.authorization.domain.ports.in.useCase.RegisterUserUseCase;
@@ -29,17 +30,15 @@ public class RegisterUserService implements RegisterUserUseCase {
     @Transactional
     public User execute(RegisterUserCommand command) {
 
-        // 1. Verificar que el username no exista
         if (userRepository.existsByUsername(command.getUsername())) {
-            throw new IllegalArgumentException(
-                    "El username ya está registrado: " + command.getUsername()
+            throw new DuplicateResourceException(
+                    "Usuario", "username", command.getUsername()
             );
         }
 
-        // 2. Verificar que el email no exista
         if (userRepository.existsByEmail(command.getEmail())) {
-            throw new IllegalArgumentException(
-                    "El email ya está registrado: " + command.getEmail()
+            throw new DuplicateResourceException(
+                    "Usuario", "email", command.getEmail()
             );
         }
 

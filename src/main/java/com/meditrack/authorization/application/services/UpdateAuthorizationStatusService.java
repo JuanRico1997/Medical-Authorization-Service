@@ -1,6 +1,8 @@
 package com.meditrack.authorization.application.services;
 
 import com.meditrack.authorization.domain.enums.AuthorizationStatus;
+import com.meditrack.authorization.domain.exceptions.ResourceNotFoundException;
+import com.meditrack.authorization.domain.exceptions.UnauthorizedAccessException;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
 import com.meditrack.authorization.domain.ports.in.command.UpdateAuthorizationStatusCommand;
 import com.meditrack.authorization.domain.ports.in.useCase.UpdateAuthorizationStatusUseCase;
@@ -41,7 +43,7 @@ public class UpdateAuthorizationStatusService implements UpdateAuthorizationStat
         // 2. Verificar que sea admin (solo admins pueden cambiar estados manualmente)
         userRepository.findById(currentUserId).ifPresent(user -> {
             if (!user.isAdmin()) {
-                throw new IllegalStateException(
+                throw new UnauthorizedAccessException(
                         "Solo los administradores pueden cambiar el estado de autorizaciones"
                 );
             }
@@ -50,8 +52,8 @@ public class UpdateAuthorizationStatusService implements UpdateAuthorizationStat
         // 3. Buscar la autorización
         MedicalAuthorization authorization = authorizationRepository.findByIdAndNotDeleted(
                 command.getAuthorizationId()
-        ).orElseThrow(() -> new IllegalArgumentException(
-                "Autorización no encontrada: " + command.getAuthorizationId()
+        ).orElseThrow(() -> new ResourceNotFoundException(
+                "Autorización", command.getAuthorizationId()
         ));
 
         // 4. Actualizar el estado

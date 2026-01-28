@@ -1,4 +1,4 @@
-package com.meditrack.authorization.infrastructure.adapters.out.persistence;
+package com.meditrack.authorization.infrastructure.adapters.out.persistence.adapter;
 
 import com.meditrack.authorization.domain.enums.AffiliationStatus;
 import com.meditrack.authorization.domain.enums.AffiliationType;

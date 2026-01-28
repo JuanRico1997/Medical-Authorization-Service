@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
 import java.util.UUID;
 
@@ -12,6 +13,7 @@ import java.util.UUID;
  * DTO: Request para crear una autorización médica
  */
 @Schema(description = "Datos para crear una autorización médica")
+@Builder
 public class CreateAuthorizationRequest {
 
     @Schema(description = "ID del paciente", example = "550e8400-e29b-41d4-a716-446655440000", required = true)

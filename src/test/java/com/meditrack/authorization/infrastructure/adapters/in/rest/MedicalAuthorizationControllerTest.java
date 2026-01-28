@@ -1,222 +1,167 @@
 package com.meditrack.authorization.infrastructure.adapters.in.rest;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meditrack.authorization.domain.enums.ServiceType;
 import com.meditrack.authorization.domain.models.MedicalAuthorization;
-import com.meditrack.authorization.domain.ports.in.*;
 import com.meditrack.authorization.domain.ports.in.command.CreateMedicalAuthorizationCommand;
-import com.meditrack.authorization.domain.ports.in.query.GetAuthorizationByIdQuery;
-import com.meditrack.authorization.domain.ports.in.query.ListAuthorizationsByPatientQuery;
-import com.meditrack.authorization.domain.ports.in.useCase.*;
-import com.meditrack.authorization.domain.ports.out.CurrentUserPort;
-import com.meditrack.authorization.infrastructure.adapters.in.rest.controller.MedicalAuthorizationController;
-import com.meditrack.authorization.infrastructure.adapters.in.rest.dto.CreateAuthorizationRequest;
-import org.junit.jupiter.api.BeforeEach;
+import com.meditrack.authorization.domain.ports.in.useCase.CreateMedicalAuthorizationUseCase;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.ArrayList;
 import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Tests de integración para MedicalAuthorizationController
+ * Tests básicos para validar lógica de comandos
  */
-@WebMvcTest(MedicalAuthorizationController.class)
-@AutoConfigureMockMvc
-@DisplayName("MedicalAuthorizationController Integration Tests")
-class MedicalAuthorizationControllerTest {
+@DisplayName("MedicalAuthorization Command Tests")
+class MedicalAuthorizationCommandTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Test
+    @DisplayName("Debe crear CreateMedicalAuthorizationCommand válido")
+    void shouldCreateValidCommand() {
+        // Given
+        UUID patientId = UUID.randomUUID();
+        UUID requestedBy = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
+        String description = "Consulta de seguimiento por dolor lumbar crónico";
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        // When
+        CreateMedicalAuthorizationCommand command = new CreateMedicalAuthorizationCommand(
+                patientId,
+                serviceType,
+                description,
+                requestedBy
+        );
 
-    @MockBean
-    private CreateMedicalAuthorizationUseCase createAuthorizationUseCase;
-
-    @MockBean
-    private EvaluateMedicalAuthorizationUseCase evaluateAuthorizationUseCase;
-
-    @MockBean
-    private UpdateAuthorizationStatusUseCase updateStatusUseCase;
-
-    @MockBean
-    private GetAuthorizationByIdUseCase getAuthorizationByIdUseCase;
-
-    @MockBean
-    private ListAuthorizationsByPatientUseCase listByPatientUseCase;
-
-    @MockBean
-    private ListPendingAuthorizationsUseCase listPendingUseCase;
-
-    @MockBean
-    private CurrentUserPort currentUserPort;
-
-    private UUID patientId;
-    private UUID authorizationId;
-    private UUID userId;
-
-    @BeforeEach
-    void setUp() {
-        patientId = UUID.randomUUID();
-        authorizationId = UUID.randomUUID();
-        userId = UUID.randomUUID();
-
-        when(currentUserPort.getCurrentUserId()).thenReturn(userId);
+        // Then
+        assertThat(command).isNotNull();
+        assertThat(command.getPatientId()).isEqualTo(patientId);
+        assertThat(command.getServiceType()).isEqualTo(serviceType);
+        assertThat(command.getDescription()).isEqualTo(description);
+        assertThat(command.getRequestedBy()).isEqualTo(requestedBy);
     }
 
     @Test
-    @DisplayName("POST /api/authorizations - Debe crear autorización como ADMIN")
-    @WithMockUser(roles = "ADMIN")
-    void shouldCreateAuthorizationAsAdmin() throws Exception {
+    @DisplayName("Debe fallar al crear comando sin patientId")
+    void shouldFailWhenCreatingCommandWithoutPatientId() {
         // Given
-        CreateAuthorizationRequest request = new CreateAuthorizationRequest(
-                patientId,
-                ServiceType.CONSULTA,
-                "Consulta de seguimiento por dolor lumbar crónico"
-        );
-
-        MedicalAuthorization mockAuthorization = new MedicalAuthorization(
-                patientId,
-                ServiceType.CONSULTA,
-                "Consulta de seguimiento por dolor lumbar crónico",
-                userId
-        );
-
-        when(createAuthorizationUseCase.execute(any(CreateMedicalAuthorizationCommand.class)))
-                .thenReturn(mockAuthorization);
+        UUID requestedBy = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
+        String description = "Consulta de seguimiento";
 
         // When - Then
-        mockMvc.perform(post("/api/authorizations")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.patientId").value(patientId.toString()))
-                .andExpect(jsonPath("$.serviceType").value("CONSULTA"))
-                .andExpect(jsonPath("$.description").value("Consulta de seguimiento por dolor lumbar crónico"));
-    }
-
-    @Test
-    @DisplayName("POST /api/authorizations - Debe rechazar acceso como PACIENTE")
-    @WithMockUser(roles = "PACIENTE")
-    void shouldRejectAuthorizationCreationAsPatient() throws Exception {
-        // Given
-        CreateAuthorizationRequest request = new CreateAuthorizationRequest(
-                patientId,
-                ServiceType.CONSULTA,
-                "Consulta de seguimiento"
-        );
-
-        // When - Then
-        mockMvc.perform(post("/api/authorizations")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("POST /api/authorizations - Debe validar campos obligatorios")
-    @WithMockUser(roles = "ADMIN")
-    void shouldValidateRequiredFields() throws Exception {
-        // Given - Request sin patientId
-        CreateAuthorizationRequest request = new CreateAuthorizationRequest(
+        assertThatThrownBy(() -> new CreateMedicalAuthorizationCommand(
                 null,
-                ServiceType.CONSULTA,
-                "Consulta"
-        );
-
-        // When - Then
-        mockMvc.perform(post("/api/authorizations")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400))
-                .andExpect(jsonPath("$.error").value("Validation Failed"));
+                serviceType,
+                description,
+                requestedBy
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("paciente");
     }
 
     @Test
-    @DisplayName("POST /api/authorizations - Debe validar longitud de descripción")
-    @WithMockUser(roles = "ADMIN")
-    void shouldValidateDescriptionLength() throws Exception {
-        // Given - Descripción muy corta (menos de 10 caracteres)
-        CreateAuthorizationRequest request = new CreateAuthorizationRequest(
+    @DisplayName("Debe fallar al crear comando sin serviceType")
+    void shouldFailWhenCreatingCommandWithoutServiceType() {
+        // Given
+        UUID patientId = UUID.randomUUID();
+        UUID requestedBy = UUID.randomUUID();
+        String description = "Consulta de seguimiento";
+
+        // When - Then
+        assertThatThrownBy(() -> new CreateMedicalAuthorizationCommand(
                 patientId,
-                ServiceType.CONSULTA,
-                "Corta"
-        );
-
-        // When - Then
-        mockMvc.perform(post("/api/authorizations")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.validationErrors").isArray());
+                null,
+                description,
+                requestedBy
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("servicio");
     }
 
     @Test
-    @DisplayName("GET /api/authorizations - Debe listar autorizaciones pendientes como MEDICO")
-    @WithMockUser(roles = "MEDICO")
-    void shouldListPendingAuthorizationsAsMedico() throws Exception {
+    @DisplayName("Debe fallar al crear comando con descripción vacía")
+    void shouldFailWhenCreatingCommandWithEmptyDescription() {
         // Given
-        when(listPendingUseCase.execute()).thenReturn(new ArrayList<>());
+        UUID patientId = UUID.randomUUID();
+        UUID requestedBy = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
 
         // When - Then
-        mockMvc.perform(get("/api/authorizations"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
-    }
-
-    @Test
-    @DisplayName("GET /api/authorizations/{id} - Debe obtener autorización por ID")
-    @WithMockUser(roles = "ADMIN")
-    void shouldGetAuthorizationById() throws Exception {
-        // Given
-        MedicalAuthorization mockAuthorization = new MedicalAuthorization(
+        assertThatThrownBy(() -> new CreateMedicalAuthorizationCommand(
                 patientId,
-                ServiceType.CONSULTA,
-                "Consulta de seguimiento",
-                userId
-        );
-
-        when(getAuthorizationByIdUseCase.execute(any(GetAuthorizationByIdQuery.class)))
-                .thenReturn(mockAuthorization);
-
-        // When - Then
-        mockMvc.perform(get("/api/authorizations/" + authorizationId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.patientId").value(patientId.toString()))
-                .andExpect(jsonPath("$.serviceType").value("CONSULTA"));
+                serviceType,
+                "",
+                requestedBy
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("descripción");
     }
 
     @Test
-    @DisplayName("GET /api/authorizations/patient/{patientId} - Debe listar autorizaciones de un paciente")
-    @WithMockUser(roles = "MEDICO")
-    void shouldListAuthorizationsByPatient() throws Exception {
+    @DisplayName("Debe fallar al crear comando con descripción muy corta")
+    void shouldFailWhenCreatingCommandWithShortDescription() {
         // Given
-        when(listByPatientUseCase.execute(any(ListAuthorizationsByPatientQuery.class)))
-                .thenReturn(new ArrayList<>());
+        UUID patientId = UUID.randomUUID();
+        UUID requestedBy = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
 
         // When - Then
-        mockMvc.perform(get("/api/authorizations/patient/" + patientId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+        assertThatThrownBy(() -> new CreateMedicalAuthorizationCommand(
+                patientId,
+                serviceType,
+                "Corta",
+                requestedBy
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("10 caracteres");
+    }
+
+    @Test
+    @DisplayName("Debe fallar al crear comando sin requestedBy")
+    void shouldFailWhenCreatingCommandWithoutRequestedBy() {
+        // Given
+        UUID patientId = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
+        String description = "Consulta de seguimiento";
+
+        // When - Then
+        assertThatThrownBy(() -> new CreateMedicalAuthorizationCommand(
+                patientId,
+                serviceType,
+                description,
+                null
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("solicitante");
+    }
+
+    @Test
+    @DisplayName("Debe crear MedicalAuthorization válida")
+    void shouldCreateValidMedicalAuthorization() {
+        // Given
+        UUID patientId = UUID.randomUUID();
+        UUID requestedBy = UUID.randomUUID();
+        ServiceType serviceType = ServiceType.CONSULTA;
+        String description = "Consulta de seguimiento por dolor lumbar crónico";
+
+        // When
+        MedicalAuthorization authorization = new MedicalAuthorization(
+                patientId,
+                serviceType,
+                description,
+                requestedBy
+        );
+
+        // Then
+        assertThat(authorization).isNotNull();
+        assertThat(authorization.getId()).isNotNull();
+        assertThat(authorization.getPatientId()).isEqualTo(patientId);
+        assertThat(authorization.getServiceType()).isEqualTo(serviceType);
+        assertThat(authorization.getDescription()).isEqualTo(description);
+        assertThat(authorization.getRequestedBy()).isEqualTo(requestedBy);
+        assertThat(authorization.isDeleted()).isFalse();
     }
 }

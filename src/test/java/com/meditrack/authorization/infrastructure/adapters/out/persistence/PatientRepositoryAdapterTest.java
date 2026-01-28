@@ -1,6 +1,7 @@
 package com.meditrack.authorization.infrastructure.adapters.out.persistence;
 
 import com.meditrack.authorization.domain.enums.AffiliationType;
+import com.meditrack.authorization.domain.enums.AffiliationStatus;
 import com.meditrack.authorization.domain.models.Patient;
 import com.meditrack.authorization.infrastructure.adapters.out.persistence.adapter.PatientRepositoryAdapter;
 import com.meditrack.authorization.infrastructure.adapters.out.persistence.entity.PatientEntity;
@@ -9,8 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
@@ -24,11 +25,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @DataJpaTest
 @ActiveProfiles("test")
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @DisplayName("PatientRepositoryAdapter Integration Tests")
 class PatientRepositoryAdapterTest {
-
-    @Autowired
-    private TestEntityManager entityManager;
 
     @Autowired
     private PatientJpaRepository jpaRepository;
@@ -61,56 +60,53 @@ class PatientRepositoryAdapterTest {
         assertThat(savedPatient).isNotNull();
         assertThat(savedPatient.getId()).isNotNull();
         assertThat(savedPatient.getDocumentNumber()).isEqualTo("1000111222");
+        assertThat(savedPatient.getFirstName()).isEqualTo("Carlos");
+        assertThat(savedPatient.getLastName()).isEqualTo("Ramírez");
+        assertThat(savedPatient.getEmail()).isEqualTo("carlos@example.com");
 
-        // Verificar en la base de datos
-        PatientEntity found = entityManager.find(PatientEntity.class, savedPatient.getId());
-        assertThat(found).isNotNull();
-        assertThat(found.getDocumentNumber()).isEqualTo("1000111222");
+        // Verificar que realmente se guardó en la base de datos
+        Optional<PatientEntity> foundEntity = jpaRepository.findById(savedPatient.getId());
+        assertThat(foundEntity).isPresent();
+        assertThat(foundEntity.get().getDocumentNumber()).isEqualTo("1000111222");
     }
 
     @Test
-    @DisplayName("Debe encontrar paciente por ID")
+    @DisplayName("Debe encontrar paciente por ID cuando no está eliminado")
     void shouldFindPatientById() {
         // Given
-        PatientEntity entity = new PatientEntity();
-        entity.setId(UUID.randomUUID());
-        entity.setDocumentNumber("1000111222");
-        entity.setFirstName("Carlos");
-        entity.setLastName("Ramírez");
-        entity.setEmail("carlos@example.com");
-        entity.setPhone("3001234567");
-        entity.setAffiliationType(AffiliationType.CONTRIBUTIVO);
-        entity.setAffiliationDate(LocalDate.of(2024, 1, 15));
-        entity.setDeleted(false);
-
-        entityManager.persist(entity);
-        entityManager.flush();
+        PatientEntity entity = createPatientEntity(
+                "1000111222",
+                "Carlos",
+                "Ramírez",
+                "carlos@example.com",
+                "3001234567",
+                false
+        );
+        PatientEntity saved = jpaRepository.save(entity);
 
         // When
-        Optional<Patient> found = adapter.findByIdAndNotDeleted(entity.getId());
+        Optional<Patient> found = adapter.findByIdAndNotDeleted(saved.getId());
 
         // Then
         assertThat(found).isPresent();
         assertThat(found.get().getDocumentNumber()).isEqualTo("1000111222");
         assertThat(found.get().getFirstName()).isEqualTo("Carlos");
+        assertThat(found.get().getLastName()).isEqualTo("Ramírez");
     }
 
     @Test
     @DisplayName("Debe verificar si existe por número de documento")
     void shouldCheckIfExistsByDocumentNumber() {
         // Given
-        PatientEntity entity = new PatientEntity();
-        entity.setId(UUID.randomUUID());
-        entity.setDocumentNumber("1000111222");
-        entity.setFirstName("Carlos");
-        entity.setLastName("Ramírez");
-        entity.setEmail("carlos@example.com");
-        entity.setAffiliationType(AffiliationType.CONTRIBUTIVO);
-        entity.setAffiliationDate(LocalDate.now());
-        entity.setDeleted(false);
-
-        entityManager.persist(entity);
-        entityManager.flush();
+        PatientEntity entity = createPatientEntity(
+                "1000111222",
+                "Carlos",
+                "Ramírez",
+                "carlos@example.com",
+                "3001234567",
+                false
+        );
+        jpaRepository.save(entity);
 
         // When
         boolean exists = adapter.existsByDocumentNumber("1000111222");
@@ -125,23 +121,47 @@ class PatientRepositoryAdapterTest {
     @DisplayName("No debe encontrar pacientes eliminados")
     void shouldNotFindDeletedPatients() {
         // Given
-        PatientEntity entity = new PatientEntity();
-        entity.setId(UUID.randomUUID());
-        entity.setDocumentNumber("1000111222");
-        entity.setFirstName("Carlos");
-        entity.setLastName("Ramírez");
-        entity.setEmail("carlos@example.com");
-        entity.setAffiliationType(AffiliationType.CONTRIBUTIVO);
-        entity.setAffiliationDate(LocalDate.now());
-        entity.setDeleted(true); // Marcado como eliminado
-
-        entityManager.persist(entity);
-        entityManager.flush();
+        PatientEntity entity = createPatientEntity(
+                "1000111222",
+                "Carlos",
+                "Ramírez",
+                "carlos@example.com",
+                "3001234567",
+                true  // Marcado como eliminado
+        );
+        PatientEntity saved = jpaRepository.save(entity);
 
         // When
-        Optional<Patient> found = adapter.findByIdAndNotDeleted(entity.getId());
+        Optional<Patient> found = adapter.findByIdAndNotDeleted(saved.getId());
 
         // Then
         assertThat(found).isEmpty();
+    }
+
+    // ========== Métodos auxiliares ==========
+
+    /**
+     * Método auxiliar para crear una entidad Patient de prueba
+     */
+    private PatientEntity createPatientEntity(
+            String documentNumber,
+            String firstName,
+            String lastName,
+            String email,
+            String phone,
+            boolean deleted
+    ) {
+        PatientEntity entity = new PatientEntity();
+        entity.setId(UUID.randomUUID());
+        entity.setDocumentNumber(documentNumber);
+        entity.setFirstName(firstName);
+        entity.setLastName(lastName);
+        entity.setEmail(email);
+        entity.setPhone(phone);
+        entity.setAffiliationType(AffiliationType.CONTRIBUTIVO);
+        entity.setAffiliationStatus(AffiliationStatus.ACTIVE);
+        entity.setAffiliationDate(LocalDate.of(2024, 1, 15));
+        entity.setDeleted(deleted);
+        return entity;
     }
 }

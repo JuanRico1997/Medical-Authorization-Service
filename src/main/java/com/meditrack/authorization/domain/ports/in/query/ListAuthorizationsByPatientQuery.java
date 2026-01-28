@@ -1,15 +1,15 @@
-package com.meditrack.authorization.domain.ports.in;
+package com.meditrack.authorization.domain.ports.in.query;
 
 import java.util.UUID;
 
 /**
- * Query: Obtener un paciente por ID
+ * Query: Listar autorizaciones de un paciente
  */
-public class GetPatientByIdQuery {
+public class ListAuthorizationsByPatientQuery {
 
     private final UUID patientId;
 
-    public GetPatientByIdQuery(UUID patientId) {
+    public ListAuthorizationsByPatientQuery(UUID patientId) {
         if (patientId == null) {
             throw new IllegalArgumentException("El ID del paciente es obligatorio");
         }

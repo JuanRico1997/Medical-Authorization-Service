@@ -1,7 +1,7 @@
 package com.meditrack.authorization.application.services;
 
 import com.meditrack.authorization.domain.models.Patient;
-import com.meditrack.authorization.domain.ports.in.GetPatientByIdQuery;
+import com.meditrack.authorization.domain.ports.in.query.GetPatientByIdQuery;
 import com.meditrack.authorization.domain.ports.in.useCase.GetPatientByIdUseCase;
 import com.meditrack.authorization.domain.ports.out.CurrentUserPort;
 import com.meditrack.authorization.domain.ports.out.PatientRepositoryPort;

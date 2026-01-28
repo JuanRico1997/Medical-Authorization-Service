@@ -1,7 +1,7 @@
 package com.meditrack.authorization.domain.ports.in.useCase;
 
 import com.meditrack.authorization.domain.models.Patient;
-import com.meditrack.authorization.domain.ports.in.GetPatientByIdQuery;
+import com.meditrack.authorization.domain.ports.in.query.GetPatientByIdQuery;
 
 /**
  * Puerto de entrada: Caso de uso Obtener Paciente por ID

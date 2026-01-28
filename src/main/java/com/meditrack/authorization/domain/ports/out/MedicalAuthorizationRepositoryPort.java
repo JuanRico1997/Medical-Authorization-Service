@@ -87,4 +87,20 @@ public interface MedicalAuthorizationRepositoryPort {
      * Elimina una autorización por ID
      */
     void deleteById(UUID id);
+
+    /**
+     * Busca todas las autorizaciones de un paciente
+     *
+     * @param patientId ID del paciente
+     * @return Lista de autorizaciones del paciente
+     */
+    List<MedicalAuthorization> findByPatientId(UUID patientId);
+
+    /**
+     * Busca todas las autorizaciones por estado que no estén eliminadas
+     *
+     * @param status Estado de la autorización
+     * @return Lista de autorizaciones con el estado especificado
+     */
+    List<MedicalAuthorization> findByStatus(AuthorizationStatus status);
 }

@@ -106,6 +106,13 @@ public class Patient {
     }
 
     /**
+     * Verifica si el paciente está activo (afiliación activa y no eliminado)
+     */
+    public boolean isActive() {
+        return this.affiliationStatus == AffiliationStatus.ACTIVE && !this.deleted;
+    }
+
+    /**
      * Desactiva el paciente (soft delete)
      * Un paciente desactivado no puede solicitar autorizaciones
      */

@@ -234,6 +234,20 @@ public class MedicalAuthorization {
         this.description = newDescription.trim();
     }
 
+    /**
+     * Marca la autorización como en revisión
+     */
+    public void putUnderReview() {
+        if (this.status == AuthorizationStatus.APROBADA ||
+                this.status == AuthorizationStatus.RECHAZADA) {
+            throw new IllegalStateException(
+                    "No se puede poner en revisión una autorización que ya fue " + this.status
+            );
+        }
+
+        this.status = AuthorizationStatus.EN_REVISION;
+    }
+
     // ==========================================
     // VALIDACIONES PRIVADAS
     // ==========================================

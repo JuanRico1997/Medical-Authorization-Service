@@ -1,9 +1,9 @@
 package com.meditrack.authorization.infrastructure.adapters.in.rest.controller;
 
 import com.meditrack.authorization.domain.models.Patient;
-import com.meditrack.authorization.domain.ports.in.*;
 import com.meditrack.authorization.domain.ports.in.command.RegisterPatientCommand;
 import com.meditrack.authorization.domain.ports.in.command.UpdatePatientCommand;
+import com.meditrack.authorization.domain.ports.in.query.GetPatientByIdQuery;
 import com.meditrack.authorization.domain.ports.in.useCase.*;
 import com.meditrack.authorization.infrastructure.adapters.in.rest.dto.PatientResponse;
 import com.meditrack.authorization.infrastructure.adapters.in.rest.dto.RegisterPatientRequest;

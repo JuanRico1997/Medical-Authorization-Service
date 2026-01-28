@@ -107,4 +107,19 @@ public interface MedicalAuthorizationJpaRepository extends JpaRepository<Medical
     @Query("SELECT COUNT(ma) FROM MedicalAuthorizationEntity ma " +
             "WHERE ma.status = :status AND ma.deleted = false")
     long countByStatus(@Param("status") AuthorizationStatus status);
+
+    /**
+     * Busca una autorización por ID que no esté eliminada
+     */
+    Optional<MedicalAuthorizationEntity> findByIdAndDeletedFalse(UUID id);
+
+    /**
+     * Busca todas las autorizaciones por estado que no estén eliminadas
+     */
+    List<MedicalAuthorizationEntity> findByStatusAndDeletedFalse(AuthorizationStatus status);
+
+    /**
+     * Busca todas las autorizaciones de un paciente que no estén eliminadas
+     */
+    List<MedicalAuthorizationEntity> findByPatientIdAndDeletedFalse(UUID patientId);
 }
